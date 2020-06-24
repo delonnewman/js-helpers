@@ -36,19 +36,34 @@ function falsy() {
     }
 }
 
-function blank() {
+function anyOf() {
+    var fns = arguments;
+    var i   = nat(fns.length);
+    return function() {
+        return fns[i].call(this);
+    };
+}
+
+function notBlank() {
     var n = nat(4);
     switch(n) {
+        case 0:
+            return nat(32);
         case 1:
-            return '';
+            return string(32);
         case 2:
-            return null;
+            return bool();
         case 3:
-            return void(0);
-        default:
-            return null;
+            return arrayOf(32, anyOf(_.partial(nat, 32), _.partial(string, 32), bool));
     }
 }
+
+var theEmptyString = _.constant('');
+var theNull        = _.constant(null);
+var theUndefined   = _.constant(undefined);
+var nil            = anyOf(theNull, theUndefined);
+var blank          = anyOf(theNull, theUndefined, theEmptyString);
+var nonNumeric     = anyOf(theNull, theUndefined, _.partial(string, 32), _.partial(arrayOf, 32, any));
 
 function string(max) {
     var length = nat(max);
@@ -90,5 +105,31 @@ describe('str', function() {
 
     it('should return an empty strings when no arguments are given', function() {
         expect(helpers.str()).toEqual('');
+    });
+});
+
+describe('isBlank', function() {
+    it("should return true if the value is null, undefined, or ''", function() {
+        expect(helpers.isBlank(null)).toBe(true);
+        expect(helpers.isBlank(undefined)).toBe(true);
+        expect(helpers.isBlank('')).toBe(true);
+    });
+
+    it("should return false if the value is not null, undefined, or ''", function() {
+        var x = notBlank();
+        expect(helpers.isBlank(x)).toBe(false);
+    });
+});
+
+describe('isPresent', function() {
+    it("should return false if the value is null, undefined, or ''", function() {
+        expect(helpers.isPresent(null)).toBe(false);
+        expect(helpers.isPresent(undefined)).toBe(false);
+        expect(helpers.isPresent('')).toBe(false);
+    });
+
+    it("should return true if the value is not null, undefined, or ''", function() {
+        var x = notBlank();
+        expect(helpers.isPresent(x)).toBe(true);
     });
 });

@@ -26,8 +26,8 @@
 
     // Predicates
 
-    function isBlank(value) {
-        return value == null || value === '';
+    function isBlank(x) {
+        return x == null || x === '';
     }
 
     function isNil(x) {
@@ -35,7 +35,7 @@
     }
 
     function isPresent(x) {
-        return x != null && value !== '';
+        return x != null && x !== '';
     }
 
     function isNumber(x) {
