@@ -15,11 +15,8 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 1.9.3"
   s.required_rubygems_version = ">= 1.3.6"
 
-  s.add_dependency "railties", ">= 4.2.0"
+  s.add_dependency "railties", ">= 4.2.0", "<= 5.2.4.3"
   s.add_dependency "thor",     ">= 0.14", "< 2.0"
-
-  s.add_dependency "jquery-rails"
-  s.add_dependency "underscore-rails"
 
   s.files        = `git ls-files`.split("\n")
   s.executables  = `git ls-files -- bin/*`.split("\n").map { |f| File.basename(f) }

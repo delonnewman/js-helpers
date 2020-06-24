@@ -1,13 +1,57 @@
 // JavaScript Helpers
-var helpers = (function($, _) {
-    var p = console.log.bind(console.log);
+var helpers = (function(_) {
 
-    function pt(tag, value) {
-        p(tag, value);
+    function p(x) {
+        console.log.apply(console.log, arguments);
+        return x;
     }
 
     function str() {
         return Array.prototype.slice.call(arguments).join('');
+    }
+
+    function pt(tag, value) {
+        if (arguments.length === 1) {
+            return function() {
+                var args = Array.prototype.slice.call(arguments);
+                console.log.apply(console.log, [tag].concat(args));
+            };
+        }
+        else if (arguments.length > 1) {
+            console.log.apply(console.log, arguments);
+        }
+        else {
+            throw new Error(str('Wrong number of arguments expected 1 or more, got: ', arguments.length));
+        }
+        return value;
+    }
+
+    function assoc(obj) {
+        var kvs    = Array.prototype.slice.call(arguments, 1);
+        var newObj = Object.assign({}, obj);
+        var i, key, value;
+        for (i = 0; i < kvs.length; i += 2) {
+            key   = kvs[i];
+            value = kvs[i + 1];
+            newObj[key] = value;
+        }
+        return newObj;
+    }
+    
+    function merge(o1, o2) {
+        var newO = {};
+        var keys1 = Object.getOwnPropertyNames(o1);
+        var i, k;
+        for (i = 0; i < keys1.length; i++) {
+            k = keys1[i];
+            newO[k] = o1[k];
+        }
+        var keys2 = Object.getOwnPropertyNames(o2);
+        for (i = 0; i < keys2.length; i++) {
+            k = keys2[i];
+            newO[k] = o2[k];
+        }
+        return newO;
     }
 
     function assert(value, msg) {
@@ -76,12 +120,12 @@ var helpers = (function($, _) {
     function formatAttr(name, value) {
         // {data: {entryId: 4, method: 'delete'}} => 'data-entry-id="4" data-method="delete"'
         if (_.isObject(value) && !_.isArray(value) && !_.isFunction(value)) {
-            return _.map(value, function(v, k) { return str(formatAttrName(name), '-', formatAttrName(k), '="', v, '"') }).join(' ');
+            return _.map(value, function(v, k) { return str(formatAttrName(name), '-', formatAttrName(k), '="', v, '"'); }).join(' ');
         }
         // {href: ['https://google.com', {q: 'Hello Everyone'}]} => 'href="https://google.com?q=Hello%20Everyone"'
         else if (name.match(/^href|src$/) !== null && _.isArray(value)) {
             if (value.length >= 2) {
-                var paramStr = _.map(value[1], function(v, k) { return str(k, '=', encodeURI(v)) }).join('&');
+                var paramStr = _.map(value[1], function(v, k) { return str(k, '=', encodeURI(v)); }).join('&');
                 return str(name, '="', value[0], '?', paramStr, '"');
             }
             else {
@@ -115,7 +159,7 @@ var helpers = (function($, _) {
     }
 
     function testRenderAttrs() {
-        assertEquals(renderAttrs({href: 'https://example.com', class: ['btn btn-primary'], data: {method: 'post', remote: true}}),
+        assertEquals(renderAttrs({ href: 'https://example.com', class: ['btn btn-primary'], data: { method: 'post', remote: true } }),
             'href="https://example.com" class="btn btn-primary" data-method="post" data-remote="true"');
     }
 
@@ -380,45 +424,6 @@ var helpers = (function($, _) {
     htmlHelpers.pad = pad;
     htmlHelpers.escape = escape;
 
-    // Underscore plugins
-    // ==================
-
-    _.mixin({
-        p: function(x) {
-            console.log(x);
-            return x;
-        },
-        pt: function(x, tag) {
-            return _.p(str(tag, ':'), x);
-        },
-        assoc: function(obj) {
-            var kvs    = Array.prototype.slice.call(arguments, 1);
-            var newObj = Object.assign({}, obj);
-            var i, key, value;
-            for (i = 0; i < kvs.length; i += 2) {
-                key   = kvs[i];
-                value = kvs[i + 1];
-                newObj[key] = value;
-            }
-            return newObj;
-        },
-        merge: function(o1, o2) {
-            var newO = {};
-            var keys1 = Object.getOwnPropertyNames(o1);
-            var i, k;
-            for (i = 0; i < keys1.length; i++) {
-                k = keys1[i];
-                newO[k] = o1[k];
-            }
-            var keys2 = Object.getOwnPropertyNames(o2);
-            for (i = 0; i < keys2.length; i++) {
-                k = keys2[i];
-                newO[k] = o2[k];
-            }
-            return newO;
-        }
-    });
-
     function fmtDate(date) {
         return str(pad(date.getMonth() + 1, 2, '0'), '/', pad(date.getDate(), 2, '0'), '/', date.getFullYear());
     }
@@ -451,11 +456,6 @@ var helpers = (function($, _) {
 
     function browserHasDateTimeInputType() {
         return browserHasInputType('datetime-local');
-    }
-
-    function clearForm(elem) {
-        var $elem = $(elem);
-        $elem.find('select, input, textarea').val('');
     }
 
     function params() {
@@ -569,9 +569,8 @@ var helpers = (function($, _) {
 
     function parseParamStr(string) {
         var params = {};
-        if (string.length === 0) {
-            return params;
-        }
+        if (string.length === 0) return params;
+
         return string.slice(1).split('&').reduce(function(params, kv) {
             var parts = kv.split('=');
             return parseParamKey(parts[0], parts[1], params);
@@ -592,6 +591,14 @@ var helpers = (function($, _) {
         return n * 1000;
     }
 
+    function ago(n) {
+        return new Date(n);
+    }
+
+    function fromNow(n) {
+        return new Date(new Date().valueOf() - n);
+    }
+
     function inSeconds(n) {
         return n / 1000;
     }
@@ -606,6 +613,14 @@ var helpers = (function($, _) {
 
     function isBlank(value) {
         return value == null || value === '';
+    }
+
+    function isNil(x) {
+        return x == null;
+    }
+
+    function isPresent(x) {
+        return x != null && value !== '';
     }
 
     function toArray(value) {
@@ -673,35 +688,57 @@ var helpers = (function($, _) {
         }
     }
 
-    return {
-        str: str,
-        icon: icon,
+    var helpers = {
+        // io
         p: p,
         pt: pt,
+
+        // time
+        seconds:         seconds,
+        inSeconds:       inSeconds,
+        timestamp:       timestamp,
+        milliseconds:    milliseconds,
+        ago:             ago,
+        fromNow:         fromNow,
+
+        parseDateString: parseDateString,
+        fmtDate:         fmtDate,
+        fmtISODate:      fmtISODate,
+        fmtISOTime:      fmtISOTime,
+        fmtISODateTime:  fmtISODateTime,
+        timeAgoInWords:  timeAgoInWords,
+
+        // predicates
+        isBlank:   isBlank,
+        isNil:     isNil,
+        isPresent: isPresent,
+        
+        // collections
+        toArray: toArray,
+        assoc:   assoc,
+        merge:   merge,
+
+        // strings
+        str:    str,
         escape: escape,
         repeat: repeat,
-        seconds: seconds,
-        inSeconds: inSeconds,
-        timestamp: timestamp,
-        milliseconds: milliseconds,
-        timeAgoInWords: timeAgoInWords,
-        isBlank: isBlank,
-        toArray: toArray,
-        pad: pad,
+        pad:    pad,
+
+        // html
         html: html,
-        params: params,
+        icon: icon,
+
+        // urls / params
+        params:        params,
         parseParamStr: parseParamStr,
         parseParamKey: parseParamKey,
-        path: path,
-        paramStr: paramStr,
-        fmtDate: fmtDate,
-        parseDateString: parseDateString,
-        fmtISODate: fmtISODate,
-        fmtISOTime: fmtISOTime,
-        fmtISODateTime: fmtISODateTime,
-        setDateTimePicker: setDateTimePicker,
-        maybeSetDateTimePicker: maybeSetDateTimePicker,
+        path:          path,
+        paramStr:      paramStr,
+
+        // dom
         browserHasInputType: browserHasInputType,
+
+        // testing
         runTests: runTests,
         assert: assert,
         assertEquals: assertEquals,
@@ -715,5 +752,11 @@ var helpers = (function($, _) {
         ]
     };
 
-})(jQuery, _);
+    // mixin to underscore if present
+    if (typeof _ !== 'undefined') _.mixin(helpers);
+
+    // export
+    window.helpers = helpers;
+
+}).call(window, _);
 
