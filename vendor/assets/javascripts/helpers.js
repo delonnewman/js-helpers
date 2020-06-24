@@ -1,30 +1,118 @@
 // JavaScript Helpers
-var helpers = (function(_) {
+(function(_) {
+
+    // IO
 
     function p(x) {
         console.log.apply(console.log, arguments);
         return x;
     }
 
-    function str() {
-        return Array.prototype.slice.call(arguments).join('');
-    }
-
     function pt(tag, value) {
         if (arguments.length === 1) {
             return function() {
                 var args = Array.prototype.slice.call(arguments);
-                console.log.apply(console.log, [tag].concat(args));
+                console.log.apply(console.log, [str(tag, ':')].concat(args));
             };
         }
         else if (arguments.length > 1) {
-            console.log.apply(console.log, arguments);
+            console.log.apply(console.log, [str(tag, ':')].concat(args));
         }
         else {
             throw new Error(str('Wrong number of arguments expected 1 or more, got: ', arguments.length));
         }
         return value;
     }
+
+    // Predicates
+
+    function isBlank(value) {
+        return value == null || value === '';
+    }
+
+    function isNil(x) {
+        return x == null;
+    }
+
+    function isPresent(x) {
+        return x != null && value !== '';
+    }
+
+    function isNumber(x) {
+        return Object.prototype.toString.call(x) === '[object Number]';
+    }
+
+    function isString(x) {
+        return Object.prototype.toString.call(x) === '[object String]';
+    }
+
+    function isBoolean(x) {
+        return Object.prototype.toString.call(x) === '[object Boolean]';
+    }
+
+    function isFunction(x) {
+        return Object.prototype.toString.call(x) === '[object Function]';
+    }
+
+    function isArguments(x) {
+        return Object.prototype.toString.call(x) === '[object Arguments]';
+    }
+
+    function isDate(x) {
+        return Object.prototype.toString.call(x) === '[object Date]';
+    }
+
+    function isRegExp(x) {
+        return Object.prototype.toString.call(x) === '[object RegExp]';
+    }
+
+    function isObject(x) {
+        var type = typeof obj;
+        return type === 'function' || type === 'object' && !!obj;
+    }
+
+    function isUndefined(x) {
+        return x === void(0);
+    }
+
+    function isNull(x) {
+        return x === null;
+    }
+
+    function isArrayLike(x) {
+        return x != null && isNumber(x.length);
+    }
+
+    function isArray(x) {
+        return Object.prototype.toString.call(x) === '[object Array]';
+    }
+
+    function isEmpty(obj) {
+        if (obj == null) return true;
+        if (isArrayLike(obj) && (isArray(obj) || isString(obj) || isArguments(obj))) return obj.length === 0;
+
+        return Object.keys(obj).length === 0;
+    }
+
+    function isElement(obj) {
+        return !!(obj && obj.nodeType === 1);
+    }
+
+    // Type conversion
+
+    function toArray(x) {
+        if (x == null) return [];
+
+        return Array.prototype.slice.call(x);
+    }
+
+    function str(x) {
+        if (x == null) return '';
+
+        return Array.prototype.slice.call(arguments).join('');
+    }
+
+    // Collections
 
     function assoc(obj) {
         var kvs    = Array.prototype.slice.call(arguments, 1);
@@ -54,9 +142,31 @@ var helpers = (function(_) {
         return newO;
     }
 
+    function map(collection, iteratee, context) {
+        if (collection == null) return [];
+        if (context == null) context = this;
+
+        var result = [], i;
+        if (isArrayLike(collection)) {
+            for (i = 0; i < collection.length; i++) {
+                result.push(iteratee.call(context, collection[i], i, collection));
+            }
+        }
+        else {
+            var keys = Object.keys(collection), key;
+            for (i = 0; i < keys.length; i++) {
+                key = keys[i];
+                result.push(iteratee.call(context, collection[key], key, collection));
+            }
+        }
+        return result;
+    }
+
+    // Testing
+
     function assert(value, msg) {
         var msg_ = msg ? str('Failed assertion: ', msg) : 'Failed assertion';
-        if (_.isNull(value) || _.isUndefined(value) || value === false) {
+        if (value == null || value === false) {
             throw new Error(msg_);
         }
     }
@@ -119,13 +229,13 @@ var helpers = (function(_) {
 
     function formatAttr(name, value) {
         // {data: {entryId: 4, method: 'delete'}} => 'data-entry-id="4" data-method="delete"'
-        if (_.isObject(value) && !_.isArray(value) && !_.isFunction(value)) {
-            return _.map(value, function(v, k) { return str(formatAttrName(name), '-', formatAttrName(k), '="', v, '"'); }).join(' ');
+        if (isObject(value) && !isArray(value) && !isFunction(value)) {
+            return map(value, function(v, k) { return str(formatAttrName(name), '-', formatAttrName(k), '="', v, '"'); }).join(' ');
         }
         // {href: ['https://google.com', {q: 'Hello Everyone'}]} => 'href="https://google.com?q=Hello%20Everyone"'
-        else if (name.match(/^href|src$/) !== null && _.isArray(value)) {
+        else if (name.match(/^href|src$/) !== null && isArray(value)) {
             if (value.length >= 2) {
-                var paramStr = _.map(value[1], function(v, k) { return str(k, '=', encodeURI(v)); }).join('&');
+                var paramStr = map(value[1], function(v, k) { return str(k, '=', encodeURI(v)); }).join('&');
                 return str(name, '="', value[0], '?', paramStr, '"');
             }
             else {
@@ -133,7 +243,7 @@ var helpers = (function(_) {
             }
         }
         // {class: ['btn', 'btn-secondary', 'btn-sm']} => 'class="btn btn-secondary btn-sm"'
-        else if (_.isArray(value)) {
+        else if (isArray(value)) {
             return str(formatAttrName(name), '="', value.join(' '), '"');
         }
         else {
@@ -164,7 +274,7 @@ var helpers = (function(_) {
     }
 
     function isAttrs(x) {
-        return _.isObject(x) && !_.isFunction(x) && !_.isArray(x);
+        return isObject(x) && !isFunction(x) && !isArray(x);
     }
 
     function renderFormList(array, env) {
@@ -258,11 +368,11 @@ var helpers = (function(_) {
     }
 
     function mergeProperties(attr1, attr2, props) {
-        var obj = _.merge(attr1, attr2), i, prop;
+        var obj = merge(attr1, attr2), i, prop;
         for (i = 0; i < props.length; i++) {
             prop = props[i];
             if (attr1[prop] && attr2[prop]) {
-                if (_.isArray(attr1[prop])) {
+                if (isArray(attr1[prop])) {
                     obj[prop] = [].concat(attr1[prop], attr2[prop]);
                 }
                 else {
@@ -283,11 +393,12 @@ var helpers = (function(_) {
         if (nameParts.classes.length !== 0) {
             attrs.class = nameParts.classes;
         }
+
         if (nameParts.ids.length !== 0) {
             attrs.id = nameParts.ids;
         }
 
-        if (isAttrs(array[1]) || !_.isEmpty(attrs)) {
+        if (isAttrs(array[1]) || !isEmpty(attrs)) {
             attrs_ = mergeProperties(attrs, array[1], ['class', 'id']);
             return str('<', name_, ' ', renderAttrs(attrs_), '>', renderFormList(array.slice(2), env), '</', name_, '>');
         }
@@ -320,7 +431,7 @@ var helpers = (function(_) {
 
     function evalString(form, env) {
         var val = lookupDefinition(form, env);
-        if (!_.isUndefined(val)) {
+        if (!isUndefined(val)) {
             return val;
         }
         else {
@@ -330,11 +441,11 @@ var helpers = (function(_) {
 
     function evalTaggedArray(form, env) {
         var val = lookupDefinition(form[0], env);
-        if (!_.isUndefined(val)) {
-            if (_.isFunction(val)) {
+        if (!isUndefined(val)) {
+            if (isFunction(val)) {
                 return evalFunction(val, form.slice(1), env);
             }
-            else if (_.isArray(val)) {
+            else if (isArray(val)) {
                 return html(val, env);
             }
             throw new Error('Only strings and functions can be evaluated as tags');
@@ -355,23 +466,23 @@ var helpers = (function(_) {
         if (form == null) {
             return '';
         }
-        else if (_.isString(form)) {
+        else if (isString(form)) {
             return evalString(form, env_);
         }
-        else if (_.isNumber(form) || _.isDate(form) || _.isRegExp(form)) {
+        else if (isNumber(form) || isDate(form) || isRegExp(form)) {
             return str(form);
         }
-        else if (_.isBoolean(form)) {
+        else if (isBoolean(form)) {
             return form ? 'Yes' : 'No';
         }
-        else if (_.isArray(form)) {
+        else if (isArray(form)) {
             if (form[0] === 'define') {
                 return evalDefinition(form, env_);
             }
-            else if (_.isFunction(form[0])) {
+            else if (isFunction(form[0])) {
                 return evalFunction(form[0], form.slice(1), env_);
             }
-            else if (_.isString(form[0])) {
+            else if (isString(form[0])) {
                 return evalTaggedArray(form, env_);
             }
             else {
@@ -385,7 +496,7 @@ var helpers = (function(_) {
 
     function icon(desc, text, opts) {
         if (desc == null) throw new Error('An icon descriptor is required');
-        if (!_.isString(text) && text != null) {
+        if (!isString(text) && text != null) {
             var opts = text;
             var text = '';
         }
@@ -393,7 +504,7 @@ var helpers = (function(_) {
         var defaults = {class: klass};
         opts = opts || {};
         if (opts.class) defaults.class = str(defaults.class, ' ', opts.class);
-        var attrs = _.merge(opts, defaults);
+        var attrs = merge(opts, defaults);
         var html = str('<i ', renderAttrs(attrs), ' aria-hidden="true"></i>');
         if (text != null) {
             return str(html, ' ', text);
@@ -518,7 +629,7 @@ var helpers = (function(_) {
                 if (keyBuff.length !== 0) {
                     key_ = keyBuff.join('');
                     keyBuff = [];
-                    if (!_.isObject(params[key_])) {
+                    if (!isObject(params[key_])) {
                         params[key_] = {};
                     }
                     params = params[key_];
@@ -542,7 +653,7 @@ var helpers = (function(_) {
                     keyBuff = [];
                 }
                 if (key_ != null) {
-                    if (!_.isArray(params[key_])) {
+                    if (!isArray(params[key_])) {
                         params[key_] = [];
                     }
                     params[key_].push(value);
@@ -583,7 +694,7 @@ var helpers = (function(_) {
 
     function path(url, params) {
         var params_ = params || {};
-        var url_ = _.isArray(url) ? url.join('/') : url;
+        var url_ = isArray(url) ? url.join('/') : url;
         return str(url_, '?', paramStr(params_));
     }
 
@@ -609,22 +720,6 @@ var helpers = (function(_) {
 
     function milliseconds(n) {
         return n;
-    }
-
-    function isBlank(value) {
-        return value == null || value === '';
-    }
-
-    function isNil(x) {
-        return x == null;
-    }
-
-    function isPresent(x) {
-        return x != null && value !== '';
-    }
-
-    function toArray(value) {
-        return Array.prototype.slice.call(value);
     }
 
     var UNITS = {
@@ -688,6 +783,13 @@ var helpers = (function(_) {
         }
     }
 
+    function uuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+        });
+    }
+
     var helpers = {
         // io
         p: p,
@@ -709,20 +811,37 @@ var helpers = (function(_) {
         timeAgoInWords:  timeAgoInWords,
 
         // predicates
-        isBlank:   isBlank,
-        isNil:     isNil,
-        isPresent: isPresent,
+        isUndefined: isUndefined,
+        isNull:      isNull,
+        isNil:       isNil,
+        isBlank:     isBlank,
+        isPresent:   isPresent,
+        isNumber:    isNumber,
+        isString:    isString,
+        isBoolean:   isBoolean,
+        isFunction:  isFunction,
+        isArguments: isArguments,
+        isDate:      isDate,
+        isRegExp:    isRegExp,
+        isObject:    isObject,
+        isArrayLike: isArrayLike,
+        isArray:     isArray,
+        isEmpty:     isEmpty,
+        isElement:   isElement,
         
         // collections
         toArray: toArray,
         assoc:   assoc,
         merge:   merge,
+        map:     map,
+        collect: map,
 
         // strings
         str:    str,
         escape: escape,
         repeat: repeat,
         pad:    pad,
+        uuid:   uuid,
 
         // html
         html: html,
@@ -759,4 +878,3 @@ var helpers = (function(_) {
     window.helpers = helpers;
 
 }).call(window, _);
-
