@@ -1,5 +1,6 @@
 // JavaScript Helpers
 (function(_) {
+    "use strict";
 
     // IO
 
@@ -13,14 +14,18 @@
             return function() {
                 var args = Array.prototype.slice.call(arguments);
                 console.log.apply(console.log, [str(tag, ':')].concat(args));
+
+                return value;
             };
         }
         else if (arguments.length > 1) {
+            var args = Array.prototype.slice.call(arguments);
             console.log.apply(console.log, [str(tag, ':')].concat(args));
         }
         else {
             throw new Error(str('Wrong number of arguments expected 1 or more, got: ', arguments.length));
         }
+
         return value;
     }
 
@@ -144,7 +149,7 @@
 
     function map(collection, iteratee, context) {
         if (collection == null) return [];
-        if (context == null) context = this;
+        if (iteratee == null) return collection;
 
         var result = [], i;
         if (isArrayLike(collection)) {
@@ -160,6 +165,78 @@
             }
         }
         return result;
+    }
+
+    function reduce(collection, iteratee, memo, context) {
+        var keys = isArrayLike(collection) ? null : Object.keys(collection),
+            length = (keys ? keys : collection).length,
+            index = 0;
+
+        if (memo == null) {
+            memo = keys ? [keys[0], collection[keys[0]]] : collection[0];
+            index++;
+        }
+
+        if (isEmpty(collection) || iteratee == null) {
+            return memo;
+        }
+
+        var key;
+        for (; index < length; index++) {
+            key = keys ? keys[index] : index;
+            memo = iteratee.call(context, memo, collection[key], key, collection);
+        }
+        return memo;
+    }
+
+    function filter(collection, predicate, context) {
+        var keys = isArrayLike(collection) ? null : Object.keys(collection),
+            length = (keys ? keys : collection).length,
+            results = [];
+
+        if (length === 0) return results;
+        if (predicate == null) return collection;
+
+        var i, key, val;
+        for (i = 0; i < length; i++) {
+            key = keys ? keys[i] : i;
+            val = collection[key];
+            if (predicate.call(context, val, key, collection)) {
+                results.push(val);
+            }
+        }
+
+        return results;
+    }
+
+    function plucker() {
+        var keys = arguments;
+        return function(object) {
+            var length = Object.keys(object).length,
+                vals = [];
+
+            if (keys.length === 0) {
+                return undefined;
+            }
+
+            if (keys.length === 1) {
+                return object[keys[0]];
+            }
+
+            var i, key, val;
+            for (i = 0; i < length; i++) {
+                key = keys[i];
+                val = object[key];
+                if (!isUndefined(val)) vals.push(val);
+            }
+
+            return vals;
+        };
+    }
+
+    function pluck(collection) {
+        var keys = Array.prototype.slice.call(arguments, 1);
+        return map(collection, plucker.apply(undefined, keys));
     }
 
     // Testing
@@ -497,8 +574,8 @@
     function icon(desc, text, opts) {
         if (desc == null) throw new Error('An icon descriptor is required');
         if (!isString(text) && text != null) {
-            var opts = text;
-            var text = '';
+            opts = text;
+            text = '';
         }
         var klass = str('fa fa-', desc);
         var defaults = {class: klass};
@@ -565,12 +642,50 @@
         return e.type !== 'text';
     }
 
-    function browserHasDateTimeInputType() {
-        return browserHasInputType('datetime-local');
-    }
-
     function params() {
         return parseParamStr(window.location.search);
+    }
+
+    function elementData(obj, element) {
+        var value = formValue(element);
+
+        if (isPresent(value)) {
+            return parseParamKey(element.name, value, obj);
+        }
+
+        return obj;
+    }
+
+    // Take a collection of elements and return an object of name / value pairs.
+    function formData(elements) {
+        return reduce(elements, elementData, {});
+    }
+
+    function isSelected(e) {
+        return e.selected === true;
+    }
+
+    // Return the value for a form element an analog to jQuery's .val method.
+    function formValue(element) {
+        if (element == null) return undefined;
+
+        var selected;
+        if (element.tagName === 'input' && (element.type === 'checkbox' || element.type === 'radio') && element.checked === true) {
+            return element.value;
+        }
+        else if (element.tagName === 'input' && (element.type !== 'checkbox' && element.type !== 'radio')) {
+            return element.value;
+        }
+        else if (element.tagName === 'select') {
+            selected = pluck(filter(element.children, isSelected), 'innerText');
+            return element.multiple === true ? selected : selected[0];
+        }
+        else if (element.tagName === 'textarea') {
+            return element.innerText;
+        }
+        else {
+            return undefined;
+        }
     }
 
     function testParseParamKey() {
@@ -611,8 +726,8 @@
     }
 
     function parseParamKey(key, value, obj) {
-        var root = obj || {},
-            tokens = key.split('');
+        var root = obj == null ? {} : obj;
+        var tokens = key.split('');
         
         // states
         var readObj = false, manyValues = false;
@@ -620,9 +735,11 @@
         var ch, i, keyBuff = [], key_, params = root;
         for (i = 0; i < tokens.length; i++) {
             ch = tokens[i];
+            // start reading collection
             if (ch === '[' && tokens[i + 1] === ']') {
                 manyValues = true;
             }
+            // start reading object
             else if (ch === '[' && tokens[i + 1] !== ']') {
                 key_ = null;
                 readObj = true;
@@ -630,11 +747,12 @@
                     key_ = keyBuff.join('');
                     keyBuff = [];
                     if (!isObject(params[key_])) {
-                        params[key_] = {};
+                        params[key_] = params[key_] || {};
                     }
                     params = params[key_];
                 }
             }
+            // complete reading object
             else if (ch === ']' && readObj) {
                 readObj = false;
                 key_ = keyBuff.join('');
@@ -647,6 +765,7 @@
                     params = params[key_];
                 }
             }
+            // complete reading collection
             else if (ch === ']' && manyValues) {
                 if (keyBuff.length !== 0) {
                     key_ = keyBuff.join('');
@@ -654,7 +773,7 @@
                 }
                 if (key_ != null) {
                     if (!isArray(params[key_])) {
-                        params[key_] = [];
+                        params[key_] = params[key_] || [];
                     }
                     params[key_].push(value);
                 }
@@ -665,6 +784,7 @@
             else if (ch === ']') {
                 throw new Error('Unexpected "]" expecting key or "["');
             }
+            // read key
             else {
                 keyBuff.push(ch);
             }
@@ -835,6 +955,11 @@
         merge:   merge,
         map:     map,
         collect: map,
+        reduce:  reduce,
+        inject:  reduce,
+        filter:  filter,
+        select:  filter,
+        pluck:   pluck,
 
         // strings
         str:    str,
@@ -856,6 +981,8 @@
 
         // dom
         browserHasInputType: browserHasInputType,
+        formData: formData,
+        formValue: formValue,
 
         // testing
         runTests: runTests,
