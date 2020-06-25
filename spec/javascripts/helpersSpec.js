@@ -297,14 +297,18 @@ describe('formValue', function() {
     });
 
 
-    it('should return the innerText of the selected options of select elements', function() {
-        var e5 = { tagName: 'SELECT', children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
-        var values = _.pluck(_.filter(e5.children, function(e) { return e.selected === true; }), 'innerText');
-        expect(helpers.formValue(e5)).toEqual(values[0]);
+    it('should return the innerText or value of the selected options of select elements', function() {
+        var e0 = { tagName: 'SELECT', children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
+        var values = _.pluck(_.filter(e0.children, function(e) { return e.selected === true; }), 'innerText');
+        expect(helpers.formValue(e0)).toEqual(values[0]);
 
-        var e6 = { tagName: 'SELECT', multiple: true, children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
-        values = _.pluck(_.filter(e6.children, function(e) { return e.selected === true; }), 'innerText');
-        expect(helpers.formValue(e6)).toEqual(values);
+        var e1 = { tagName: 'SELECT', multiple: true, children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
+        values = _.pluck(_.filter(e1.children, function(e) { return e.selected === true; }), 'innerText');
+        expect(helpers.formValue(e1)).toEqual(values);
+
+        var e2 = { tagName: 'SELECT', children: arrayOf(10, function() { return { isSelected: bool(), value: nat(10), innerText: string(32) }; }) };
+        values = _.pluck(_.filter(e2.children, function(e) { return e.selected === true; }), 'value');
+        expect(helpers.formValue(e2)).toEqual(values[0]);
     });
 
 });

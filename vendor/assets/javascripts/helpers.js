@@ -667,6 +667,14 @@
         return e.selected === true;
     }
 
+    function optionValue(option) {
+        if (option.value == null) {
+            return option.innerText;
+        }
+
+        return option.value;
+    }
+
     // Return the value for a form element an analog to jQuery's .val method.
     function formValue(element) {
         if (element == null) return undefined;
@@ -679,7 +687,7 @@
             return element.value;
         }
         else if (element.tagName === 'SELECT') {
-            selected = pluck(filter(element.children, isSelected), 'innerText');
+            selected = map(filter(element.children, isSelected), optionValue);
             return element.multiple === true ? selected : selected[0];
         }
         else if (element.tagName === 'TEXTAREA') {
