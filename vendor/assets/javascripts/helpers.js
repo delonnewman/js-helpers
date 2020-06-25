@@ -72,8 +72,8 @@
     }
 
     function isObject(x) {
-        var type = typeof obj;
-        return type === 'function' || type === 'object' && !!obj;
+        var type = typeof x;
+        return type === 'function' || type === 'object' && !!x;
     }
 
     function isUndefined(x) {
