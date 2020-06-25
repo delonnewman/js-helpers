@@ -688,29 +688,6 @@
         }
     }
 
-    function testParseParamKey() {
-        var p0 = parseParamKey('a', 1);
-        assertEquals(p0.a, 1);
-
-        var p1 = parseParamKey('a[b]', 2);
-        assertEquals(p1.a.b, 2);
-
-        var p2 = parseParamKey('a[b][c]', 3);
-        assertEquals(p2.a.b.c, 3);
-
-        var p3 = parseParamKey('a[]', 4);
-        assertEquals(p3.a[0], 4);
-
-        var p4 = parseParamKey('a[b][]', 5);
-        assertEquals(p4.a.b[0], 5);
-
-        var p5 = {};
-        parseParamKey('a[b]', 6, p5);
-        parseParamKey('a[c]', 7, p5);
-        assertEquals(p5.a.b, 6);
-        assertEquals(p5.a.c, 7);
-    }
-
     function printParams(params) {
         var buffer = arguments[1] || [];
         var i, key, val, keys = Object.keys(params);
@@ -994,7 +971,6 @@
             testRenderAttrs,
             testRenderTag,
             testParseTagName,
-            testParseParamKey
         ]
     };
 
@@ -1002,6 +978,6 @@
     if (typeof _ !== 'undefined') _.mixin(helpers);
 
     // export
-    window.helpers = helpers;
+    this.helpers = helpers;
 
 }).call(window, _);
