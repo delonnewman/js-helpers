@@ -7,16 +7,20 @@ function bool() {
 }
 
 function inputType() {
-    var n = nat(4);
+    var n = nat(5);
     switch(n) {
-        case 1:
+        case 0:
             return 'checkbox';
-        case 2:
+        case 1:
             return 'radio';
+        case 2:
+            return 'text';
         case 3:
-            return 'text';
-        default:
-            return 'text';
+            return 'hidden';
+        case 4:
+            return 'button';
+        case 4:
+            return 'submit';
     }
 }
 
@@ -96,21 +100,26 @@ function arrayOf(max, func) {
     return a;
 }
 
-function element(allClear, names) {
+function element(allClear) {
     allClear = allClear == null ? false : allClear;
-    names    = names == null ? [] : names;
 
     var type = inputType();
     var name = ['entry[', string(15, FIELD_NAME_CHARS), ']'].join('');
 
+    var e = document.createElement('input');
+    e.setAttribute('type', type);
+    e.setAttribute('name', name);
+
     if (type === 'checkbox' || type === 'radio') {
         var checked = allClear ? false : bool();
-        return { tagName: 'input', type: type, name: name, value: string(32), checked: checked };
+        e.setAttribute('value', string(32));
+        if (checked === true) e.setAttribute('checked', 'checked');
     }
     else {
-        var value = allClear ? blank() : string(32);
-        return { tagName: 'input', type: type, name: name, value: value };
+        if (!allClear) e.setAttribute('value', string(32));
     }
+
+    return e;
 }
 
 function ensureNotClear(element) {
@@ -132,7 +141,7 @@ function elements(max, allClear) {
         elements[i] = element(allClear, names);
     }
     if (allClear !== true) ensureNotClear(elements[0]);
-    if (!isArray) elements.length = count;
+    if (!isArray) elements.length = count + 1;
     return elements;
 }
 
@@ -239,40 +248,88 @@ describe('parseParamKey', function() {
 });
 
 describe('formValue', function() {
-    it('should return an appropriate value depending on the form element type', function() {
+    it('should return the value of the "value" property if the input is checked for checkbox and radio types', function() {
         var checkTypes = ['checkbox', 'radio'];
-        var otherInputTypes = ['text'];
 
-        var e0 = { tagName: 'input', type: sample(checkTypes), checked: true, value: string(32) };
+        var e0 = document.createElement('input');
+        e0.setAttribute('type', sample(checkTypes));
+        e0.setAttribute('checked', 'checked');
+        e0.setAttribute('value', string(32));
+        expect(e0.checked).toBe(true);
         expect(helpers.formValue(e0)).toBe(e0.value);
 
-        var e1 = { tagName: 'input', type: sample(checkTypes), checked: false, value: string(32) };
+        var e1 = document.createElement('input');
+        e1.setAttribute('type', sample(checkTypes));
+        e1.setAttribute('value', string(32));
+        expect(e1.checked).toBe(false);
         expect(helpers.formValue(e1)).toBeUndefined();
+    });
 
-        var e2 = { tagName: 'input', type: sample(otherInputTypes), value: string(32) };
+    it('should return undefined for button and submit input types', function() {
+        var ignoredInputTypes = ['button', 'submit'];
+
+        var e7 = document.createElement('input');
+        e7.setAttribute('type', sample(ignoredInputTypes));
+        e7.setAttribute('value', string(32));
+        expect(helpers.formValue(e7)).toBeUndefined();
+
+        var e8 = document.createElement('input');
+        e8.setAttribute('type', sample(ignoredInputTypes));
+        expect(helpers.formValue(e8)).toBeUndefined();
+    });
+
+    it('should return the value of the "value" property of all other input types', function() {
+        var valueInputTypes = ['text', 'hidden'];
+
+        var e2 = document.createElement('input');
+        e2.setAttribute('type', sample(valueInputTypes));
+        e2.setAttribute('value', string(32));
         expect(helpers.formValue(e2)).toBe(e2.value);
 
-        var e3 = { tagName: 'input', type: sample(otherInputTypes) };
-        expect(helpers.formValue(e3)).toBeUndefined();
+        var e3 = document.createElement('input');
+        e3.setAttribute('type', sample(valueInputTypes));
+        expect(helpers.formValue(e3)).toEqual('');
+    });
 
-        var e4 = { tagName: 'textarea', innerText: string(32) };
+    it('should return the innerText of textarea elements', function() {
+        var e4 = { tagName: 'TEXTAREA', innerText: string(32) };
         expect(helpers.formValue(e4)).toBe(e4.innerText);
+    });
 
-        var e5 = { tagName: 'select', children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
+
+    it('should return the innerText of the selected options of select elements', function() {
+        var e5 = { tagName: 'SELECT', children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
         var values = _.pluck(_.filter(e5.children, function(e) { return e.selected === true; }), 'innerText');
         expect(helpers.formValue(e5)).toEqual(values[0]);
 
-        var e6 = { tagName: 'select', multiple: true, children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
+        var e6 = { tagName: 'SELECT', multiple: true, children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
         values = _.pluck(_.filter(e6.children, function(e) { return e.selected === true; }), 'innerText');
         expect(helpers.formValue(e6)).toEqual(values);
     });
+
 });
 
 describe('formData', function() {
+    it('should return an empty object if the element list is empty, null, or undefined', function() {
+        expect(_.isEmpty(helpers.formData())).toBe(true);
+        expect(_.isEmpty(helpers.formData(null))).toBe(true);
+        expect(_.isEmpty(helpers.formData([]))).toBe(true);
+    });
+
+    it('should return an empty object if all elements are clear', function() {
+        var elems = elements(20, true);
+        var data = helpers.formData(elems);
+
+        console.log('elems', elems);
+        console.log('data', data);
+
+        expect(_.isEmpty(data)).toBe(true);
+    });
+
     it('should return an object of form data', function() {
         var elems = helpers.toArray(elements(20));
-        elems.push({ tagName: 'input', type: 'hidden', name: 'entry[user_id]', value: nat(20) });
-        elems.push({ tagName: 'input', type: 'hidden', name: 'entry[unit_id]', value: nat(20) });
+        elems.push({ tagName: 'INPUT', type: 'hidden', name: 'entry[user_id]', value: nat(20) });
+        elems.push({ tagName: 'INPUT', type: 'hidden', name: 'entry[unit_id]', value: nat(20) });
         var data  = helpers.formData(elems);
 
         expect(data.entry.unit_id).toBeDefined();
@@ -280,10 +337,5 @@ describe('formData', function() {
 
         var filtered = _.filter(elems, function(e) { return helpers.isPresent(helpers.formValue(e)); });
         expect(Object.keys(data.entry).length).toBe(filtered.length);
-    });
-
-    it('should return an empty object if the element list is empty or all elements are clear', function() {
-        expect(_.isEmpty(helpers.formData([]))).toBe(true);
-        expect(_.isEmpty(helpers.formData(elements(20, true)))).toBe(true);
     });
 });

@@ -212,8 +212,7 @@
     function plucker() {
         var keys = arguments;
         return function(object) {
-            var length = Object.keys(object).length,
-                vals = [];
+            var vals = [];
 
             if (keys.length === 0) {
                 return undefined;
@@ -224,7 +223,7 @@
             }
 
             var i, key, val;
-            for (i = 0; i < length; i++) {
+            for (i = 0; i < keys.length; i++) {
                 key = keys[i];
                 val = object[key];
                 if (!isUndefined(val)) vals.push(val);
@@ -658,7 +657,10 @@
 
     // Take a collection of elements and return an object of name / value pairs.
     function formData(elements) {
-        return reduce(elements, elementData, {});
+        var init = {};
+        if (elements == null) return init;
+
+        return reduce(elements, elementData, init);
     }
 
     function isSelected(e) {
@@ -670,17 +672,17 @@
         if (element == null) return undefined;
 
         var selected;
-        if (element.tagName === 'input' && (element.type === 'checkbox' || element.type === 'radio') && element.checked === true) {
+        if (element.tagName === 'INPUT' && (element.type === 'checkbox' || element.type === 'radio') && element.checked === true) {
             return element.value;
         }
-        else if (element.tagName === 'input' && (element.type !== 'checkbox' && element.type !== 'radio')) {
+        else if (element.tagName === 'INPUT' && (element.type !== 'checkbox' && element.type !== 'radio' && element.type !== 'button' && element.type !== 'submit')) {
             return element.value;
         }
-        else if (element.tagName === 'select') {
+        else if (element.tagName === 'SELECT') {
             selected = pluck(filter(element.children, isSelected), 'innerText');
             return element.multiple === true ? selected : selected[0];
         }
-        else if (element.tagName === 'textarea') {
+        else if (element.tagName === 'TEXTAREA') {
             return element.innerText;
         }
         else {
