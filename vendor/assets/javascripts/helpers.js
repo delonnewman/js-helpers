@@ -648,7 +648,7 @@
     function elementData(obj, element) {
         var value = formValue(element);
 
-        if (isPresent(value)) {
+        if (!isNil(value)) {
             return parseParamKey(element.name, value, obj);
         }
 
@@ -680,14 +680,15 @@
         if (element == null) return undefined;
 
         var selected;
-        if (element.tagName === 'INPUT' && (element.type === 'checkbox' || element.type === 'radio') && element.checked === true) {
-            return element.value;
+        if (element.tagName === 'INPUT' && (element.type === 'checkbox' || element.type === 'radio')) {
+            return element.checked ? element.value : '';
         }
         else if (element.tagName === 'INPUT' && (element.type !== 'checkbox' && element.type !== 'radio' && element.type !== 'button' && element.type !== 'submit')) {
             return element.value;
         }
         else if (element.tagName === 'SELECT') {
             selected = map(filter(element.children, isSelected), optionValue);
+            if (isEmpty(selected)) return '';
             return element.multiple === true ? selected : selected[0];
         }
         else if (element.tagName === 'TEXTAREA') {

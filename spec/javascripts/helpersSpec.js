@@ -262,7 +262,7 @@ describe('formValue', function() {
         e1.setAttribute('type', sample(checkTypes));
         e1.setAttribute('value', string(32));
         expect(e1.checked).toBe(false);
-        expect(helpers.formValue(e1)).toBeUndefined();
+        expect(helpers.formValue(e1)).toEqual('');
     });
 
     it('should return undefined for button and submit input types', function() {
@@ -298,17 +298,17 @@ describe('formValue', function() {
 
 
     it('should return the innerText or value of the selected options of select elements', function() {
-        var e0 = { tagName: 'SELECT', children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
+        var e0 = { tagName: 'SELECT', children: arrayOf(10, function() { return { selected: bool(), innerText: string(32) }; }) };
         var values = _.pluck(_.filter(e0.children, function(e) { return e.selected === true; }), 'innerText');
-        expect(helpers.formValue(e0)).toEqual(values[0]);
+        expect(helpers.formValue(e0)).toEqual(values[0] == null ? '' : values[0]);
 
-        var e1 = { tagName: 'SELECT', multiple: true, children: arrayOf(10, function() { return { isSelected: bool(), innerText: string(32) }; }) };
+        var e1 = { tagName: 'SELECT', multiple: true, children: arrayOf(10, function() { return { selected: bool(), innerText: string(32) }; }) };
         values = _.pluck(_.filter(e1.children, function(e) { return e.selected === true; }), 'innerText');
-        expect(helpers.formValue(e1)).toEqual(values);
+        expect(helpers.formValue(e1)).toEqual(_.isEmpty(values) ? '' : values);
 
-        var e2 = { tagName: 'SELECT', children: arrayOf(10, function() { return { isSelected: bool(), value: nat(10), innerText: string(32) }; }) };
+        var e2 = { tagName: 'SELECT', children: arrayOf(10, function() { return { selected: bool(), value: nat(10), innerText: string(32) }; }) };
         values = _.pluck(_.filter(e2.children, function(e) { return e.selected === true; }), 'value');
-        expect(helpers.formValue(e2)).toEqual(values[0]);
+        expect(helpers.formValue(e2)).toEqual(values[0] == null ? '' : values[0]);
     });
 
 });
@@ -320,16 +320,6 @@ describe('formData', function() {
         expect(_.isEmpty(helpers.formData([]))).toBe(true);
     });
 
-    it('should return an empty object if all elements are clear', function() {
-        var elems = elements(20, true);
-        var data = helpers.formData(elems);
-
-        console.log('elems', elems);
-        console.log('data', data);
-
-        expect(_.isEmpty(data)).toBe(true);
-    });
-
     it('should return an object of form data', function() {
         var elems = helpers.toArray(elements(20));
         elems.push({ tagName: 'INPUT', type: 'hidden', name: 'entry[user_id]', value: nat(20) });
@@ -339,7 +329,7 @@ describe('formData', function() {
         expect(data.entry.unit_id).toBeDefined();
         expect(data.entry.user_id).toBeDefined();
 
-        var filtered = _.filter(elems, function(e) { return helpers.isPresent(helpers.formValue(e)); });
+        var filtered = _.filter(elems, function(e) { return !helpers.isNil(helpers.formValue(e)); });
         expect(Object.keys(data.entry).length).toBe(filtered.length);
     });
 });
