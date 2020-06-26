@@ -262,7 +262,7 @@ describe('formValue', function() {
         e1.setAttribute('type', sample(checkTypes));
         e1.setAttribute('value', string(32));
         expect(e1.checked).toBe(false);
-        expect(helpers.formValue(e1)).toEqual('');
+        expect(helpers.formValue(e1)).toBeUndefined();
     });
 
     it('should return undefined for button and submit input types', function() {

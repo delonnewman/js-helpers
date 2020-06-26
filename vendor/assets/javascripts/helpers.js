@@ -680,8 +680,8 @@
         if (element == null) return undefined;
 
         var selected;
-        if (element.tagName === 'INPUT' && (element.type === 'checkbox' || element.type === 'radio')) {
-            return element.checked ? element.value : '';
+        if (element.tagName === 'INPUT' && (element.type === 'checkbox' || element.type === 'radio') && element.checked === true) {
+            return element.value;
         }
         else if (element.tagName === 'INPUT' && (element.type !== 'checkbox' && element.type !== 'radio' && element.type !== 'button' && element.type !== 'submit')) {
             return element.value;
