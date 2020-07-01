@@ -792,12 +792,13 @@
 
         return string.slice(1).split('&').reduce(function(params, kv) {
             var parts = kv.split('=');
-            return parseParamKey(parts[0], parts[1], params);
+            return parseParamKey(decodeURI(parts[0]), parts[1], params);
         }, params);
     }
 
+    // TODO: add support for nested params
     function paramStr(params) {
-        return Object.keys(params).map(function(param) { return str(param, '=', params[param]); }).join('&');
+        return Object.keys(params).map(function(param) { return str(encodeURI(param), '=', params[param]); }).join('&');
     }
 
     function path(url, params) {
