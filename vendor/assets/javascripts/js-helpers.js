@@ -103,6 +103,29 @@
         return !!(obj && obj.nodeType === 1);
     }
 
+    // TODO: add nesting, add value matching
+    function isValid(properties, object) {
+        if (arguments.length === 2) {
+            return _.reduce(properties, function(valid, property) {
+                return valid && _.isPresent(object[property]);
+            }, true);
+        }
+        else if (arguments.length === 1) {
+            return function(object) {
+                return isValid(object. properties);
+            };
+        }
+        else {
+            throw new Error('Wrong number of arguments expected 1 or 2 got: ' + arguments.length);
+        }
+    }
+
+    function isUUID(x) {
+        if (!_.isString(x)) return false;
+
+        return x.match(/^[0-9A-Fa-f]{8,8}\-[0-9A-Fa-f]{4,4}\-[0-9A-Fa-f]{4,4}\-[0-9A-Fa-f]{4,4}\-[0-9A-Fa-f]{12,12}$/) != null;
+    }
+
     // Type conversion
 
     function toArray(x) {
@@ -937,6 +960,8 @@
         isArray:     isArray,
         isEmpty:     isEmpty,
         isElement:   isElement,
+        isValid:     isValid,
+        isUUID:      isUUID,
         
         // collections
         toArray: toArray,
