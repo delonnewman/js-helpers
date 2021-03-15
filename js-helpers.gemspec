@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 1.9.3"
   s.required_rubygems_version = ">= 1.3.6"
 
-  s.add_dependency "railties", ">= 4.2.0", "< 6.0.0"
+  s.add_dependency "railties"
   s.add_dependency "thor",     ">= 0.14", "< 2.0"
 
   s.files        = `git ls-files`.split("\n")
